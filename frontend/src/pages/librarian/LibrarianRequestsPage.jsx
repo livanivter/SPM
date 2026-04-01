@@ -3,17 +3,18 @@ import { librarianApi } from "../../api/client";
 import { StatCard } from "../../components/StatCard";
 
 export function LibrarianRequestsPage({ workspace }) {
+  const [statusFilter, setStatusFilter] = useState("PENDING");
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  async function loadRequests() {
+  async function loadRequests(filter = statusFilter) {
     setLoading(true);
     setError("");
     try {
-      const result = await librarianApi.listPendingBorrowRequests(workspace?.token);
+      const result = await librarianApi.listBorrowRequests(workspace?.token, filter);
       setRequests(result || []);
     } catch (requestError) {
       setError(requestError.message || "Failed to load borrow requests");
@@ -23,8 +24,12 @@ export function LibrarianRequestsPage({ workspace }) {
   }
 
   useEffect(() => {
-    loadRequests();
+    loadRequests("PENDING");
   }, []);
+
+  async function handleSearch() {
+    await loadRequests(statusFilter);
+  }
 
   async function handleProcess(requestId, action) {
     setProcessingId(requestId);
@@ -32,13 +37,14 @@ export function LibrarianRequestsPage({ workspace }) {
     setError("");
 
     try {
-      const payload = {
-        action,
-        processNote: action === "APPROVE" ? "Approved by librarian workspace" : "Rejected by librarian workspace",
-      };
+      const payload =
+        action === "APPROVE"
+          ? { action: "APPROVE", processNote: "Approved by librarian" }
+          : { action: "REJECT", rejectReason: "Rejected by librarian workspace" };
+
       const result = await librarianApi.processBorrowRequest(workspace?.token, requestId, payload);
       setMessage(`Request #${result.requestId} ${action === "APPROVE" ? "approved" : "rejected"} successfully.`);
-      await loadRequests();
+      await loadRequests(statusFilter);
     } catch (requestError) {
       setError(requestError.message || "Failed to process request");
     } finally {
@@ -49,8 +55,9 @@ export function LibrarianRequestsPage({ workspace }) {
   const stats = useMemo(() => {
     return {
       total: requests.length,
-      borrowCount: requests.filter((item) => item.requestType === "BORROW").length,
       pendingCount: requests.filter((item) => item.status === "PENDING").length,
+      approvedCount: requests.filter((item) => item.status === "APPROVED").length,
+      rejectedCount: requests.filter((item) => item.status === "REJECTED").length,
     };
   }, [requests]);
 
@@ -60,21 +67,29 @@ export function LibrarianRequestsPage({ workspace }) {
         <div className="section-head">
           <div>
             <span className="eyebrow">Librarian Scope</span>
-            <h2 className="section-title">Borrow And Return Processing</h2>
+            <h2 className="section-title">Borrow Request Processing</h2>
           </div>
-          <p className="page-note">
-            This feature owner now reads pending borrow requests from the backend and can approve or reject them.
-          </p>
+          <p className="page-note">Review borrow requests and process approvals with inventory update.</p>
         </div>
 
         <div className="stats-grid">
-          <StatCard label="Pending Requests" value={stats.pendingCount} />
-          <StatCard label="Borrow Requests" value={stats.borrowCount} />
-          <StatCard label="Loaded Rows" value={stats.total} />
+          <StatCard label="Loaded Requests" value={stats.total} />
+          <StatCard label="Pending" value={stats.pendingCount} />
+          <StatCard label="Approved" value={stats.approvedCount} />
         </div>
       </section>
 
       <section className="page-card">
+        <div className="toolbar">
+          <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+            <option value="PENDING">PENDING</option>
+            <option value="APPROVED">APPROVED</option>
+            <option value="REJECTED">REJECTED</option>
+          </select>
+          <button className="primary-button" type="button" disabled={loading} onClick={handleSearch}>
+            {loading ? "Loading..." : "Refresh"}
+          </button>
+        </div>
         {message ? <p className="page-note">{message}</p> : null}
         {error ? <p className="page-note">{error}</p> : null}
         <div className="table-wrap">
@@ -84,9 +99,9 @@ export function LibrarianRequestsPage({ workspace }) {
                 <th>ID</th>
                 <th>Reader</th>
                 <th>Book</th>
-                <th>Type</th>
                 <th>Status</th>
                 <th>Requested At</th>
+                <th>Remaining</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -94,36 +109,40 @@ export function LibrarianRequestsPage({ workspace }) {
               {requests.map((item) => (
                 <tr key={item.requestId}>
                   <td>{item.requestId}</td>
-                  <td>{item.readerName}</td>
+                  <td>{item.readerUsername}</td>
                   <td>{item.bookTitle}</td>
-                  <td>{item.requestType}</td>
                   <td>{item.status}</td>
                   <td>{item.requestedAt || "-"}</td>
+                  <td>{item.remainingCopies ?? 0}</td>
                   <td>
-                    <div className="table-actions">
-                      <button
-                        className="primary-button"
-                        type="button"
-                        disabled={processingId === item.requestId}
-                        onClick={() => handleProcess(item.requestId, "APPROVE")}
-                      >
-                        {processingId === item.requestId ? "Processing..." : "Approve"}
-                      </button>
-                      <button
-                        className="secondary-button"
-                        type="button"
-                        disabled={processingId === item.requestId}
-                        onClick={() => handleProcess(item.requestId, "REJECT")}
-                      >
-                        Reject
-                      </button>
-                    </div>
+                    {item.status === "PENDING" ? (
+                      <div className="table-actions">
+                        <button
+                          className="primary-button"
+                          type="button"
+                          disabled={processingId === item.requestId}
+                          onClick={() => handleProcess(item.requestId, "APPROVE")}
+                        >
+                          {processingId === item.requestId ? "Processing..." : "Approve"}
+                        </button>
+                        <button
+                          className="secondary-button"
+                          type="button"
+                          disabled={processingId === item.requestId}
+                          onClick={() => handleProcess(item.requestId, "REJECT")}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    ) : (
+                      item.message || "-"
+                    )}
                   </td>
                 </tr>
               ))}
               {!loading && requests.length === 0 ? (
                 <tr>
-                  <td colSpan="7">No pending requests right now.</td>
+                  <td colSpan="7">No requests for the selected status.</td>
                 </tr>
               ) : null}
             </tbody>

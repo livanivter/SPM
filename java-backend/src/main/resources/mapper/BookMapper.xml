@@ -64,6 +64,13 @@
         order by b.id desc
     </select>
 
+    <select id="selectByIsbn" resultMap="BookResultMap">
+        select <include refid="BaseBookColumns"/>
+        from books b
+        left join categories c on b.category_id = c.id
+        where b.isbn = #{isbn} and b.deleted = false
+    </select>
+
     <insert id="insert" parameterType="com.team.lms.entity.Book" useGeneratedKeys="true" keyProperty="id">
         insert into books(title, author, isbn, publisher, description, category_id, shelf_status, created_at, updated_at, deleted)
         values(#{title}, #{author}, #{isbn}, #{publisher}, #{description}, #{category.id}, #{shelfStatus}, now(), now(), false)
@@ -78,6 +85,13 @@
             description = #{description},
             category_id = #{category.id},
             shelf_status = #{shelfStatus},
+            updated_at = now()
+        where id = #{id}
+    </update>
+
+    <update id="softDeleteById">
+        update books
+        set deleted = true,
             updated_at = now()
         where id = #{id}
     </update>

@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team.lms.mapper.BookMapper">
+
+    <resultMap id="BookResultMap" type="com.team.lms.entity.Book">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="author" column="author"/>
+        <result property="isbn" column="isbn"/>
+        <result property="publisher" column="publisher"/>
+        <result property="description" column="description"/>
+        <result property="shelfStatus" column="shelf_status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <association property="category" javaType="com.team.lms.entity.Category">
+            <id property="id" column="category_id"/>
+            <result property="name" column="category_name"/>
+        </association>
+    </resultMap>
+
+    <sql id="BaseBookColumns">
+        b.id, b.title, b.author, b.isbn, b.publisher, b.description, b.category_id, b.shelf_status,
+        b.created_at, b.updated_at, b.deleted, c.name as category_name
+    </sql>
+
+    <select id="selectById" resultMap="BookResultMap">
+        select <include refid="BaseBookColumns"/>
+        from books b
+        left join categories c on b.category_id = c.id
+        where b.id = #{id} and b.deleted = false
+    </select>
+
+    <select id="selectAllVisible" resultMap="BookResultMap">
+        select <include refid="BaseBookColumns"/>
+        from books b
+        left join categories c on b.category_id = c.id
+        where b.deleted = false and b.shelf_status = 'ON_SHELF'
+        order by b.id desc
+    </select>
+
+    <select id="selectVisibleByKeyword" resultMap="BookResultMap">
+        select <include refid="BaseBookColumns"/>
+        from books b
+        left join categories c on b.category_id = c.id
+        where b.deleted = false
+          and b.shelf_status = 'ON_SHELF'
+          and (
+              b.title like concat('%', #{keyword}, '%')
+              or b.author like concat('%', #{keyword}, '%')
+              or b.isbn like concat('%', #{keyword}, '%')
+              or c.name like concat('%', #{keyword}, '%')
+          )
+        order by b.id desc
+    </select>
+
+    <select id="selectAll" resultMap="BookResultMap">
+        select <include refid="BaseBookColumns"/>
+        from books b
+        left join categories c on b.category_id = c.id
+        where b.deleted = false
+        order by b.id desc
+    </select>
+
+    <insert id="insert" parameterType="com.team.lms.entity.Book" useGeneratedKeys="true" keyProperty="id">
+        insert into books(title, author, isbn, publisher, description, category_id, shelf_status, created_at, updated_at, deleted)
+        values(#{title}, #{author}, #{isbn}, #{publisher}, #{description}, #{category.id}, #{shelfStatus}, now(), now(), false)
+    </insert>
+
+    <update id="update" parameterType="com.team.lms.entity.Book">
+        update books
+        set title = #{title},
+            author = #{author},
+            isbn = #{isbn},
+            publisher = #{publisher},
+            description = #{description},
+            category_id = #{category.id},
+            shelf_status = #{shelfStatus},
+            updated_at = now()
+        where id = #{id}
+    </update>
+</mapper>

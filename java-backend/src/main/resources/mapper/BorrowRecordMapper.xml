@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team.lms.mapper.BorrowRecordMapper">
+
+    <resultMap id="BorrowRecordResultMap" type="com.team.lms.entity.BorrowRecord">
+        <id property="id" column="id"/>
+        <result property="status" column="status"/>
+        <result property="borrowDate" column="borrow_date"/>
+        <result property="dueDate" column="due_date"/>
+        <result property="returnDate" column="return_date"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <association property="reader" javaType="com.team.lms.entity.User">
+            <id property="id" column="reader_id"/>
+            <result property="username" column="reader_username"/>
+        </association>
+        <association property="book" javaType="com.team.lms.entity.Book">
+            <id property="id" column="book_id"/>
+            <result property="title" column="book_title"/>
+        </association>
+        <association property="borrowRequest" javaType="com.team.lms.entity.BorrowRequest">
+            <id property="id" column="borrow_request_id"/>
+        </association>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.team.lms.entity.BorrowRecord" useGeneratedKeys="true" keyProperty="id">
+        insert into borrow_records(reader_id, book_id, borrow_request_id, status, borrow_date, due_date, return_date, created_at, updated_at, deleted)
+        values(#{reader.id}, #{book.id}, #{borrowRequest.id}, #{status}, #{borrowDate}, #{dueDate}, #{returnDate}, now(), now(), false)
+    </insert>
+
+    <select id="selectByReaderId" resultMap="BorrowRecordResultMap">
+        select br.id, br.reader_id, br.book_id, br.borrow_request_id, br.status, br.borrow_date, br.due_date, br.return_date,
+               br.created_at, br.updated_at, br.deleted,
+               u.username as reader_username,
+               b.title as book_title
+        from borrow_records br
+        join users u on br.reader_id = u.id
+        join books b on br.book_id = b.id
+        where br.reader_id = #{readerId} and br.deleted = false
+        order by br.id desc
+    </select>
+</mapper>

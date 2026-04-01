@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team.lms.mapper.InventoryMapper">
+
+    <resultMap id="InventoryResultMap" type="com.team.lms.entity.Inventory">
+        <id property="id" column="id"/>
+        <result property="totalCopies" column="total_copies"/>
+        <result property="availableCopies" column="available_copies"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <association property="book" javaType="com.team.lms.entity.Book">
+            <id property="id" column="book_id"/>
+        </association>
+    </resultMap>
+
+    <select id="selectByBookId" resultMap="InventoryResultMap">
+        select * from inventory where book_id = #{bookId} and deleted = false
+    </select>
+
+    <insert id="insert" parameterType="com.team.lms.entity.Inventory" useGeneratedKeys="true" keyProperty="id">
+        insert into inventory(book_id, total_copies, available_copies, created_at, updated_at, deleted)
+        values(#{book.id}, #{totalCopies}, #{availableCopies}, now(), now(), false)
+    </insert>
+
+    <update id="update" parameterType="com.team.lms.entity.Inventory">
+        update inventory
+        set total_copies = #{totalCopies},
+            available_copies = #{availableCopies},
+            updated_at = now()
+        where id = #{id}
+    </update>
+</mapper>

@@ -1,0 +1,14 @@
+package com.team.lms.mapper;
+
+import com.team.lms.entity.Category;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
+
+@Mapper
+public interface CategoryMapper {
+    Category selectById(Long id);
+    List<Category> selectAllActive();
+    int insert(Category category);
+    int update(Category category);
+}

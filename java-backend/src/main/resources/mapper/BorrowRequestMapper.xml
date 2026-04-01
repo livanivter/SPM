@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team.lms.mapper.BorrowRequestMapper">
+
+    <resultMap id="BorrowRequestResultMap" type="com.team.lms.entity.BorrowRequest">
+        <id property="id" column="id"/>
+        <result property="status" column="status"/>
+        <result property="requestNote" column="request_note"/>
+        <result property="rejectReason" column="reject_reason"/>
+        <result property="processedAt" column="processed_at"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <association property="reader" javaType="com.team.lms.entity.User">
+            <id property="id" column="reader_id"/>
+            <result property="username" column="reader_username"/>
+            <result property="fullName" column="reader_full_name"/>
+        </association>
+        <association property="book" javaType="com.team.lms.entity.Book">
+            <id property="id" column="book_id"/>
+            <result property="title" column="book_title"/>
+            <result property="author" column="book_author"/>
+            <result property="isbn" column="book_isbn"/>
+        </association>
+        <association property="processedBy" javaType="com.team.lms.entity.User">
+            <id property="id" column="processed_by"/>
+            <result property="username" column="operator_username"/>
+        </association>
+    </resultMap>
+
+    <sql id="BorrowRequestColumns">
+        br.id, br.reader_id, br.book_id, br.status, br.request_note, br.reject_reason, br.processed_by,
+        br.processed_at, br.created_at, br.updated_at, br.deleted,
+        r.username as reader_username, r.full_name as reader_full_name,
+        b.title as book_title, b.author as book_author, b.isbn as book_isbn,
+        o.username as operator_username
+    </sql>
+
+    <insert id="insert" parameterType="com.team.lms.entity.BorrowRequest" useGeneratedKeys="true" keyProperty="id">
+        insert into borrow_requests(reader_id, book_id, status, request_note, reject_reason, processed_by, processed_at, created_at, updated_at, deleted)
+        values(#{reader.id}, #{book.id}, #{status}, #{requestNote}, #{rejectReason}, #{processedBy.id}, #{processedAt}, now(), now(), false)
+    </insert>
+
+    <select id="selectById" resultMap="BorrowRequestResultMap">
+        select <include refid="BorrowRequestColumns"/>
+        from borrow_requests br
+        join users r on br.reader_id = r.id
+        join books b on br.book_id = b.id
+        left join users o on br.processed_by = o.id
+        where br.id = #{id} and br.deleted = false
+    </select>
+
+    <select id="selectByReaderId" resultMap="BorrowRequestResultMap">
+        select <include refid="BorrowRequestColumns"/>
+        from borrow_requests br
+        join users r on br.reader_id = r.id
+        join books b on br.book_id = b.id
+        left join users o on br.processed_by = o.id
+        where br.reader_id = #{readerId} and br.deleted = false
+        order by br.id desc
+    </select>
+
+    <select id="selectPendingRequests" resultMap="BorrowRequestResultMap">
+        select <include refid="BorrowRequestColumns"/>
+        from borrow_requests br
+        join users r on br.reader_id = r.id
+        join books b on br.book_id = b.id
+        left join users o on br.processed_by = o.id
+        where br.deleted = false and br.status = 'PENDING'
+        order by br.id asc
+    </select>
+
+    <update id="update" parameterType="com.team.lms.entity.BorrowRequest">
+        update borrow_requests
+        set status = #{status},
+            request_note = #{requestNote},
+            reject_reason = #{rejectReason},
+            processed_by = #{processedBy.id},
+            processed_at = #{processedAt},
+            updated_at = now()
+        where id = #{id}
+    </update>
+</mapper>

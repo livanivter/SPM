@@ -93,6 +93,32 @@ create table if not exists operation_logs (
     deleted boolean not null default false
 );
 
+create table if not exists reservations (
+    id bigint primary key auto_increment,
+    reader_id bigint not null,
+    book_id bigint not null,
+    status varchar(32) not null,
+    queue_no int not null,
+    created_at datetime not null,
+    updated_at datetime not null,
+    deleted boolean not null default false,
+    constraint fk_reservation_reader foreign key (reader_id) references users(id),
+    constraint fk_reservation_book foreign key (book_id) references books(id)
+);
+
+create table if not exists fines (
+    id bigint primary key auto_increment,
+    reader_id bigint not null,
+    borrow_record_id bigint not null,
+    amount decimal(10,2) not null,
+    status varchar(32) not null,
+    created_at datetime not null,
+    updated_at datetime not null,
+    deleted boolean not null default false,
+    constraint fk_fine_reader foreign key (reader_id) references users(id),
+    constraint fk_fine_borrow_record foreign key (borrow_record_id) references borrow_records(id)
+);
+
 insert into categories(code, name, enabled, created_at, updated_at, deleted)
 select 'CS', 'Computer Science', true, now(), now(), false
 where not exists (select 1 from categories where code = 'CS');
@@ -124,3 +150,13 @@ select b.id, 5, 5, now(), now(), false
 from books b
 where b.isbn = 'DEMO-ISBN-001'
   and not exists (select 1 from inventory where book_id = b.id);
+
+insert into reservations(reader_id, book_id, status, queue_no, created_at, updated_at, deleted)
+select u.id, b.id, 'PENDING', 1, now(), now(), false
+from users u
+join books b on b.isbn = 'DEMO-ISBN-001'
+where u.username = 'reader'
+  and not exists (
+      select 1 from reservations r
+      where r.reader_id = u.id and r.book_id = b.id and r.status = 'PENDING' and r.deleted = false
+  );

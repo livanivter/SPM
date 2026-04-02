@@ -42,4 +42,49 @@
         where br.reader_id = #{readerId} and br.deleted = false
         order by br.id desc
     </select>
+
+    <select id="selectById" resultMap="BorrowRecordResultMap">
+        select br.id, br.reader_id, br.book_id, br.borrow_request_id, br.status, br.borrow_date, br.due_date, br.return_date,
+               br.created_at, br.updated_at, br.deleted,
+               u.username as reader_username,
+               b.title as book_title
+        from borrow_records br
+        join users u on br.reader_id = u.id
+        join books b on br.book_id = b.id
+        where br.id = #{id} and br.deleted = false
+    </select>
+
+    <select id="selectReturnPendingRecords" resultMap="BorrowRecordResultMap">
+        select br.id, br.reader_id, br.book_id, br.borrow_request_id, br.status, br.borrow_date, br.due_date, br.return_date,
+               br.created_at, br.updated_at, br.deleted,
+               u.username as reader_username,
+               b.title as book_title
+        from borrow_records br
+        join users u on br.reader_id = u.id
+        join books b on br.book_id = b.id
+        where br.status = 'RETURN_PENDING' and br.deleted = false
+        order by br.id asc
+    </select>
+
+    <select id="selectAll" resultMap="BorrowRecordResultMap">
+        select br.id, br.reader_id, br.book_id, br.borrow_request_id, br.status, br.borrow_date, br.due_date, br.return_date,
+               br.created_at, br.updated_at, br.deleted,
+               u.username as reader_username,
+               b.title as book_title
+        from borrow_records br
+        join users u on br.reader_id = u.id
+        join books b on br.book_id = b.id
+        where br.deleted = false
+        order by br.id desc
+    </select>
+
+    <update id="update" parameterType="com.team.lms.entity.BorrowRecord">
+        update borrow_records
+        set status = #{status},
+            borrow_date = #{borrowDate},
+            due_date = #{dueDate},
+            return_date = #{returnDate},
+            updated_at = now()
+        where id = #{id}
+    </update>
 </mapper>

@@ -5,14 +5,13 @@ import lombok.Data;
 
 @Data
 @Builder
-public class BorrowRequestManageVo {
-    private Long requestId;
+public class ReservationManageVo {
+    private Long reservationId;
     private Long bookId;
     private String bookTitle;
     private Long readerId;
     private String readerUsername;
     private String status;
-    private String requestedAt;
-    private Integer remainingCopies;
+    private Integer queueNo;
     private String message;
 }

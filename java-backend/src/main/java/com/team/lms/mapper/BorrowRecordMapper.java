@@ -9,4 +9,8 @@ import java.util.List;
 public interface BorrowRecordMapper {
     int insert(BorrowRecord borrowRecord);
     List<BorrowRecord> selectByReaderId(Long readerId);
+    BorrowRecord selectById(Long id);
+    List<BorrowRecord> selectReturnPendingRecords();
+    List<BorrowRecord> selectAll();
+    int update(BorrowRecord borrowRecord);
 }

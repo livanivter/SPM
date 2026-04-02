@@ -72,6 +72,17 @@
         order by br.id asc
     </select>
 
+    <select id="selectByStatus" resultMap="BorrowRequestResultMap">
+        select <include refid="BorrowRequestColumns"/>
+        from borrow_requests br
+        join users r on br.reader_id = r.id
+        join books b on br.book_id = b.id
+        left join users o on br.processed_by = o.id
+        where br.deleted = false
+          and br.status = #{status}
+        order by br.id asc
+    </select>
+
     <update id="update" parameterType="com.team.lms.entity.BorrowRequest">
         update borrow_requests
         set status = #{status},

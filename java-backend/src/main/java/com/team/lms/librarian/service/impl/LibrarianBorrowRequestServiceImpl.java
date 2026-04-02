@@ -33,22 +33,20 @@ public class LibrarianBorrowRequestServiceImpl implements LibrarianBorrowRequest
     private final CurrentUserSupport currentUserSupport;
 
     @Override
-    public List<BorrowRequestManageVo> listPendingRequests() {
-        return borrowRequestMapper.selectPendingRequests().stream()
-                .map(request -> {
-                    Inventory inventory = inventoryMapper.selectByBookId(request.getBook().getId());
-                    return BorrowRequestManageVo.builder()
-                            .requestId(request.getId())
-                            .bookId(request.getBook().getId())
-                            .bookTitle(request.getBook().getTitle())
-                            .readerId(request.getReader().getId())
-                            .readerUsername(request.getReader().getUsername())
-                            .status(request.getStatus().name())
-                            .remainingCopies(inventory == null ? 0 : inventory.getAvailableCopies())
-                            .message("pending")
-                            .build();
-                })
-                .toList();
+    public List<BorrowRequestManageVo> listRequests(String statusFilter) {
+        List<BorrowRequest> requests;
+        if (statusFilter == null || statusFilter.isBlank()) {
+            requests = borrowRequestMapper.selectPendingRequests();
+        } else {
+            String normalizedStatus = statusFilter.trim().toUpperCase();
+            try {
+                BorrowRequestStatus.valueOf(normalizedStatus);
+            } catch (IllegalArgumentException exception) {
+                throw new BusinessException(400, "invalid borrow request status");
+            }
+            requests = borrowRequestMapper.selectByStatus(normalizedStatus);
+        }
+        return requests.stream().map(this::toManageVo).toList();
     }
 
     @Override
@@ -75,8 +73,9 @@ public class LibrarianBorrowRequestServiceImpl implements LibrarianBorrowRequest
         borrowRequest.setProcessedBy(librarian);
         borrowRequest.setProcessedAt(LocalDateTime.now());
 
+        boolean approveAction = request.isApprove();
         String message;
-        if (request.isApprove()) {
+        if (approveAction) {
             if (inventory.getAvailableCopies() <= 0) {
                 throw new BusinessException(400, "no available copies left");
             }
@@ -97,9 +96,10 @@ public class LibrarianBorrowRequestServiceImpl implements LibrarianBorrowRequest
             message = "borrow request approved and inventory updated";
         } else {
             borrowRequest.setStatus(BorrowRequestStatus.REJECTED);
-            borrowRequest.setRejectReason(request.getRejectReason() == null || request.getRejectReason().isBlank()
+            String rejectReason = request.effectiveRejectReason();
+            borrowRequest.setRejectReason(rejectReason == null || rejectReason.isBlank()
                     ? "rejected by librarian"
-                    : request.getRejectReason().trim());
+                    : rejectReason.trim());
             message = borrowRequest.getRejectReason();
         }
 
@@ -113,8 +113,24 @@ public class LibrarianBorrowRequestServiceImpl implements LibrarianBorrowRequest
                 .readerId(borrowRequest.getReader().getId())
                 .readerUsername(borrowRequest.getReader().getUsername())
                 .status(borrowRequest.getStatus().name())
+                .requestedAt(borrowRequest.getCreatedAt() == null ? null : borrowRequest.getCreatedAt().toString())
                 .remainingCopies(latestInventory == null ? 0 : latestInventory.getAvailableCopies())
                 .message(message)
+                .build();
+    }
+
+    private BorrowRequestManageVo toManageVo(BorrowRequest request) {
+        Inventory inventory = inventoryMapper.selectByBookId(request.getBook().getId());
+        return BorrowRequestManageVo.builder()
+                .requestId(request.getId())
+                .bookId(request.getBook().getId())
+                .bookTitle(request.getBook().getTitle())
+                .readerId(request.getReader().getId())
+                .readerUsername(request.getReader().getUsername())
+                .status(request.getStatus().name())
+                .requestedAt(request.getCreatedAt() == null ? null : request.getCreatedAt().toString())
+                .remainingCopies(inventory == null ? 0 : inventory.getAvailableCopies())
+                .message(request.getRejectReason())
                 .build();
     }
 }

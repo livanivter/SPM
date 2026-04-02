@@ -3,16 +3,19 @@ package com.team.lms.librarian.vo;
 import lombok.Builder;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 @Builder
-public class BorrowRequestManageVo {
-    private Long requestId;
+public class ReturnManageVo {
+    private Long recordId;
     private Long bookId;
     private String bookTitle;
     private Long readerId;
     private String readerUsername;
     private String status;
-    private String requestedAt;
-    private Integer remainingCopies;
+    private String dueDate;
+    private String returnDate;
+    private BigDecimal fineAmount;
     private String message;
 }

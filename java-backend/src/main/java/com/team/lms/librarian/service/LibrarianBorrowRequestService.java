@@ -6,7 +6,7 @@ import com.team.lms.librarian.vo.BorrowRequestManageVo;
 import java.util.List;
 
 public interface LibrarianBorrowRequestService {
-    List<BorrowRequestManageVo> listPendingRequests();
+    List<BorrowRequestManageVo> listRequests(String statusFilter);
 
     BorrowRequestManageVo processRequest(String authorizationHeader, Long requestId, BorrowRequestProcessRequest request);
 }

@@ -18,8 +18,16 @@
         select * from categories where id = #{id} and deleted = false
     </select>
 
+    <select id="selectByCode" resultMap="CategoryResultMap">
+        select * from categories where code = #{code} and deleted = false
+    </select>
+
     <select id="selectAllActive" resultMap="CategoryResultMap">
         select * from categories where deleted = false and enabled = true order by id asc
+    </select>
+
+    <select id="selectAll" resultMap="CategoryResultMap">
+        select * from categories where deleted = false order by id asc
     </select>
 
     <insert id="insert" parameterType="com.team.lms.entity.Category" useGeneratedKeys="true" keyProperty="id">

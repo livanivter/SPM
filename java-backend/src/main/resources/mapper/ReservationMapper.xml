@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.team.lms.mapper.ReservationMapper">
+
+    <resultMap id="ReservationResultMap" type="com.team.lms.entity.Reservation">
+        <id property="id" column="id"/>
+        <result property="status" column="status"/>
+        <result property="queueNo" column="queue_no"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <result property="deleted" column="deleted"/>
+        <association property="reader" javaType="com.team.lms.entity.User">
+            <id property="id" column="reader_id"/>
+            <result property="username" column="reader_username"/>
+        </association>
+        <association property="book" javaType="com.team.lms.entity.Book">
+            <id property="id" column="book_id"/>
+            <result property="title" column="book_title"/>
+        </association>
+    </resultMap>
+
+    <sql id="ReservationColumns">
+        r.id, r.reader_id, r.book_id, r.status, r.queue_no, r.created_at, r.updated_at, r.deleted,
+        u.username as reader_username,
+        b.title as book_title
+    </sql>
+
+    <select id="selectById" resultMap="ReservationResultMap">
+        select <include refid="ReservationColumns"/>
+        from reservations r
+        join users u on r.reader_id = u.id
+        join books b on r.book_id = b.id
+        where r.id = #{id} and r.deleted = false
+    </select>
+
+    <select id="selectAll" resultMap="ReservationResultMap">
+        select <include refid="ReservationColumns"/>
+        from reservations r
+        join users u on r.reader_id = u.id
+        join books b on r.book_id = b.id
+        where r.deleted = false
+        order by r.id asc
+    </select>
+
+    <select id="selectPending" resultMap="ReservationResultMap">
+        select <include refid="ReservationColumns"/>
+        from reservations r
+        join users u on r.reader_id = u.id
+        join books b on r.book_id = b.id
+        where r.deleted = false and r.status = 'PENDING'
+        order by r.queue_no asc, r.id asc
+    </select>
+
+    <insert id="insert" parameterType="com.team.lms.entity.Reservation" useGeneratedKeys="true" keyProperty="id">
+        insert into reservations(reader_id, book_id, status, queue_no, created_at, updated_at, deleted)
+        values(#{reader.id}, #{book.id}, #{status}, #{queueNo}, now(), now(), false)
+    </insert>
+
+    <update id="update" parameterType="com.team.lms.entity.Reservation">
+        update reservations
+        set status = #{status},
+            queue_no = #{queueNo},
+            updated_at = now()
+        where id = #{id}
+    </update>
+</mapper>

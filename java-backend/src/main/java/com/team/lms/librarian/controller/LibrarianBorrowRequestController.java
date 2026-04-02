@@ -5,6 +5,7 @@ import com.team.lms.common.api.BaseController;
 import com.team.lms.librarian.dto.BorrowRequestProcessRequest;
 import com.team.lms.librarian.service.LibrarianBorrowRequestService;
 import com.team.lms.librarian.vo.BorrowRequestManageVo;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,14 +22,14 @@ public class LibrarianBorrowRequestController extends BaseController {
     public ApiResponse<List<BorrowRequestManageVo>> listPendingRequests(
             @RequestParam(value = "status_filter", required = false) String statusFilter
     ) {
-        return success(librarianBorrowRequestService.listPendingRequests());
+        return success(librarianBorrowRequestService.listRequests(statusFilter));
     }
 
     @PostMapping("/{requestId}/process")
     public ApiResponse<BorrowRequestManageVo> processRequest(
             @RequestHeader("Authorization") String authorizationHeader,
             @PathVariable Long requestId,
-            @RequestBody BorrowRequestProcessRequest request
+            @Valid @RequestBody BorrowRequestProcessRequest request
     ) {
         return success(librarianBorrowRequestService.processRequest(authorizationHeader, requestId, request));
     }
